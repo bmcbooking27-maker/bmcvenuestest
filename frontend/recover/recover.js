@@ -62,13 +62,21 @@ document.addEventListener("DOMContentLoaded", () => {
         resetBtn.appendChild(loader);
 
         try {
-            // Update password using Supabase Auth
             const { data, error } = await supabaseClient.auth.updateUser({
                 password: newPassword
             });
 
             if (error) {
                 throw error;
+            }
+
+            // Sync the new password to the custom admin_password table
+            if (data?.user?.email) {
+                await fetch(`${SUPABASE_URL}/rest/v1/admin_password?email=eq.${data.user.email}`, {
+                    method: 'PATCH',
+                    headers: supabaseHeaders,
+                    body: JSON.stringify({ password: newPassword })
+                });
             }
 
             // Show success popup
