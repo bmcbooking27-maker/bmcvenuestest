@@ -220,3 +220,52 @@ async function deleteBooking(bookingId) {
         throw error;
     }
 }
+
+/**
+ * Check if a booking overlaps with existing bookings
+ */
+async function checkBookingOverlap(bookingData, excludeBookingId = null) {
+    try {
+        const { Date, 'Time(from)': timeFrom, 'Time(to)': timeTo, Venue } = bookingData;
+        
+        // Fetch bookings for the same date and venue
+        const params = new URLSearchParams({
+            Date: `eq.${Date}`,
+            Venue: `eq.${Venue}`
+        });
+        
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/bookvenuebmc?${params.toString()}`, {
+            headers: supabaseHeaders
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to fetch existing bookings for validation');
+        }
+        
+        const existingBookings = await response.json();
+        
+        // Check for time overlap
+        for (const booking of existingBookings) {
+            // Skip the current booking if we're editing
+            if (excludeBookingId && booking.Booking_ID === excludeBookingId) {
+                continue;
+            }
+            
+            const existingFrom = booking['Time(from)'];
+            const existingTo = booking['Time(to)'];
+            
+            // Logic: new overlaps with existing if new_start < existing_end AND new_end > existing_start
+            if (timeFrom < existingTo && timeTo > existingFrom) {
+                return { 
+                    overlap: true, 
+                    conflictingBooking: booking 
+                };
+            }
+        }
+        
+        return { overlap: false };
+    } catch (error) {
+        console.error("Error checking booking overlap:", error);
+        throw error;
+    }
+}
