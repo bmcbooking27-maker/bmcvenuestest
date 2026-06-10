@@ -86,6 +86,20 @@ function formatDisplayDate(dateStr) {
     });
 }
 
+function formatTimeToAMPM(timeStr) {
+    if (!timeStr) return "—";
+    const parts = String(timeStr).split(":");
+    if (parts.length < 2) return timeStr;
+    const hours = parts[0];
+    const minutes = parts[1];
+    let h = parseInt(hours, 10);
+    const m = minutes || "00";
+    const ampm = h >= 12 ? "PM" : "AM";
+    h = h % 12;
+    h = h ? h : 12; 
+    return `${h.toString().padStart(2, "0")}:${m} ${ampm}`;
+}
+
 let dropdownsPopulated = false;
 
 async function loadVenuesTable() {
@@ -149,8 +163,8 @@ async function loadVenuesTable() {
             <td>${b.Department_Name || "—"}</td>
             <td>${b.Function_Name || "—"}</td>
             <td>${b.Date ? b.Date.split('-').reverse().join('-') : "—"}</td>
-            <td>${b['Time(from)'] || "—"}</td>
-            <td>${b['Time(to)'] || "—"}</td>
+            <td>${formatTimeToAMPM(b['Time(from)'])}</td>
+            <td>${formatTimeToAMPM(b['Time(to)'])}</td>
         `;
         tbody.appendChild(tr);
     });
